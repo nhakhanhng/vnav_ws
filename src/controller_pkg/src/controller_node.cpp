@@ -128,12 +128,12 @@ public:
     //
     // ~~~~ begin solution
     desired_state_sub_ = this->create_subscription<trajectory_msgs::msg::MultiDOFJointTrajectoryPoint>(
-        "desired_state", 10, std::bind(&ControllerNode::onDesiredState, this, std::placeholders::_1));
+        "/desired_state", 10, std::bind(&ControllerNode::onDesiredState, this, std::placeholders::_1));
 
     current_state_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-        "current_state", 10, std::bind(&ControllerNode::onCurrentState, this, std::placeholders::_1));
+        "/current_state", 10, std::bind(&ControllerNode::onCurrentState, this, std::placeholders::_1));
   
-  propeller_speed_pub_ = this->create_publisher<mav_msgs::msg::Actuators>("propeller_speeds", 10);
+  propeller_speed_pub_ = this->create_publisher<mav_msgs::msg::Actuators>("/rotor_speed_cmds", 10);
     control_loop_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(1000 / hz), std::bind(&ControllerNode::controlLoop, this));
     control_loop_timer_->reset();
@@ -254,7 +254,7 @@ public:
     Eigen::Vector3d b3d = A.normalized();
     Eigen::Vector3d b1d = Eigen::Vector3d(cos(yawd), sin(yawd), 0);
     Eigen::Vector3d b2d = b3d.cross(b1d).normalized();
-    Eigen::Vector2d b1d_proj = b2d.cross(b3d);
+    Eigen::Vector3d b1d_proj = b2d.cross(b3d);
     Eigen::Matrix3d Rd;
     Rd.col(0) = b1d_proj;
     Rd.col(1) = b2d;
@@ -288,7 +288,7 @@ public:
     //      derivative as they are of the second order and have negligible
     //      effects on the closed-loop dynamics.
     //
-    Eigen::Vector3d F = A.dot(R * e3);
+    double F = A.dot(R * e3);
     Eigen::Vector3d M = -kr * er - komega * eomega + omega.cross(J * omega);
     // 5.5 Recover the rotor speeds from the wrench computed above
     //
@@ -315,7 +315,7 @@ public:
     //       in one direction!
     //
     Eigen::Vector4d control_input = Eigen::Vector4d(F, M(0), M(1), M(2));
-    Eigen::Vector4d thrust = F2W.inverse() * wrench;
+    Eigen::Vector4d thrust = F2W.inverse() * control_input;
 
     double f1 = signed_sqrt(thrust(0));
     double f2 = signed_sqrt(thrust(1));
@@ -345,6 +345,7 @@ public:
 
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv); // Initialize the ROS 2 system
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Starting controller_node...");
   rclcpp::spin(std::make_shared<ControllerNode>()); // Spin the node so it
                                                     // processes callbacks
   rclcpp::shutdown(); // Shutdown the ROS 2 system when done
