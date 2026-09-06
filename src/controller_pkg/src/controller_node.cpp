@@ -211,7 +211,12 @@ public:
     q.normalize();
 
     R = q.toRotationMatrix();
-    omega << cur_state.twist.twist.angular.x, cur_state.twist.twist.angular.y, cur_state.twist.twist.angular.z;
+    Eigen::Vector3d omega_world(
+      cur_state.twist.twist.angular.x,
+      cur_state.twist.twist.angular.y,
+      cur_state.twist.twist.angular.z
+    );
+    omega = R.transpose() * omega_world;    
     // this is here to surpress an "unused variable compiler warning"
     // you can remove it when you start writing your answer
     // cur_state == cur_state;
