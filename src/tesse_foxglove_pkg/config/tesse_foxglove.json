@@ -1,0 +1,110 @@
+{
+  "configById": {
+    "3D!tesse": {
+      "cameraState": {
+        "perspective": true,
+        "distance": 22,
+        "phi": 55,
+        "targetOffset": [0, 0, 2],
+        "thetaOffset": 40,
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-pose",
+      "followTf": "base_link_gt",
+      "scene": {
+        "transforms": {
+          "enable": true,
+          "lineWidth": 2,
+          "labelSize": 0.08
+        }
+      },
+      "transforms": {
+        "frame:world": { "visible": true },
+        "frame:base_link_gt": { "visible": true },
+        "frame:av-desired": { "visible": true },
+        "frame:third_person": { "visible": false }
+      },
+      "topics": {
+        "/tesse/visuals": { "visible": true }
+      },
+      "layers": {
+        "grid": {
+          "visible": true,
+          "drawBehind": true,
+          "label": "Grid",
+          "instanceId": "grid",
+          "layerId": "foxglove.Grid",
+          "size": 20,
+          "divisions": 20,
+          "lineWidth": 1,
+          "color": "#248eff26"
+        }
+      }
+    },
+    "Image!tesse": {
+      "cameraTopic": "/third_person/rgb/image_raw",
+      "smooth": true,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "rotation": 0
+    },
+    "Plot!tesse": {
+      "paths": [
+        {
+          "value": "/current_state.pose.pose.position.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/desired_state.transforms[0].translation.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/current_state.pose.pose.position.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/desired_state.transforms[0].translation.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/current_state.pose.pose.position.z",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/desired_state.transforms[0].translation.z",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "linkedGlobalVariables": [],
+  "playbackConfig": { "speed": 1 },
+  "layout": {
+    "first": "3D!tesse",
+    "second": {
+      "first": "Image!tesse",
+      "second": "Plot!tesse",
+      "direction": "column",
+      "splitPercentage": 55
+    },
+    "direction": "row",
+    "splitPercentage": 62
+  }
+}

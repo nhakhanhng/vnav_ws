@@ -92,6 +92,9 @@ class ControllerNode : public rclcpp::Node {
       ad;      // desired acceleration of the UAV's c.o.m. in the world frame
   double yawd; // desired yaw angle
 
+  bool have_current_state_ = false;
+  bool have_desired_state_ = false;
+
   int64_t hz; // frequency of the main control loop
 
   static Eigen::Vector3d Vee(const Eigen::Matrix3d &in) {
@@ -163,6 +166,11 @@ public:
   void onDesiredState(
       const trajectory_msgs::msg::MultiDOFJointTrajectoryPoint &des_state) {
 
+    if (des_state.transforms.empty() || des_state.velocities.empty() ||
+        des_state.accelerations.empty()) {
+      return;
+    }
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     //  PART 3 | Objective: fill in xd, vd, ad, yawd
     // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~  ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -188,6 +196,7 @@ public:
     //    - look into the functions tf2::getYaw(...) and tf2::fromMsg
     //
     yawd = tf2::getYaw(des_state.transforms[0].rotation);
+    have_desired_state_ = true;
     //
     // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
     //                                 end part 3
@@ -217,6 +226,7 @@ public:
       cur_state.twist.twist.angular.z
     );
     omega = R.transpose() * omega_world;    
+    have_current_state_ = true;
     // this is here to surpress an "unused variable compiler warning"
     // you can remove it when you start writing your answer
     // cur_state == cur_state;
@@ -228,6 +238,9 @@ public:
   }
 
   void controlLoop() {
+    if (!have_current_state_ || !have_desired_state_) {
+      return;
+    }
     Eigen::Vector3d ex, ev, er, eomega;
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -256,9 +269,16 @@ public:
     //
     // Build b3d vector
     Eigen::Vector3d A = -kx * ex - kv * ev + m * g * e3 + m * ad;
+    if (!A.allFinite() || A.squaredNorm() < 1e-12) {
+      return;
+    }
     Eigen::Vector3d b3d = A.normalized();
     Eigen::Vector3d b1d = Eigen::Vector3d(cos(yawd), sin(yawd), 0);
-    Eigen::Vector3d b2d = b3d.cross(b1d).normalized();
+    Eigen::Vector3d b2 = b3d.cross(b1d);
+    if (b2.squaredNorm() < 1e-12) {
+      return;
+    }
+    Eigen::Vector3d b2d = b2.normalized();
     Eigen::Vector3d b1d_proj = b2d.cross(b3d);
     Eigen::Matrix3d Rd;
     Rd.col(0) = b1d_proj;

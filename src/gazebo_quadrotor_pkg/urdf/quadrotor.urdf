@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<robot name="quadrotor">
+  <link name="base_link">
+    <inertial>
+      <mass value="1.0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.4 0.4 0.08"/>
+      </geometry>
+      <material name="grey">
+        <color rgba="0.5 0.5 0.5 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.4 0.4 0.08"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="third_person"/>
+
+  <joint name="third_person_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="third_person"/>
+    <!-- Behind and above the quadrotor, TESSE-style chase camera. -->
+    <origin xyz="-4.0 0.0 2.5" rpy="0 0.35 0"/>
+  </joint>
+
+  <gazebo reference="base_link">
+    <material>Gazebo/Grey</material>
+    <mu1>0.1</mu1>
+    <mu2>0.1</mu2>
+  </gazebo>
+
+  <gazebo reference="third_person">
+    <sensor name="third_person_camera" type="camera">
+      <update_rate>15</update_rate>
+      <camera name="third_person">
+        <horizontal_fov>1.047</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.1</near>
+          <far>200</far>
+        </clip>
+      </camera>
+      <always_on>true</always_on>
+      <visualize>false</visualize>
+      <plugin name="third_person_camera_plugin" filename="libgazebo_ros_camera.so">
+        <ros>
+          <namespace>third_person</namespace>
+          <remapping>image_raw:=rgb/image_raw</remapping>
+          <remapping>camera_info:=rgb/camera_info</remapping>
+        </ros>
+        <camera_name>rgb</camera_name>
+        <frame_name>third_person</frame_name>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <gazebo>
+    <plugin name="p3d" filename="libgazebo_ros_p3d.so">
+      <ros>
+        <namespace>/quadrotor</namespace>
+        <remapping>odom:=ground_truth/odometry</remapping>
+      </ros>
+      <body_name>base_link</body_name>
+      <frame_name>world</frame_name>
+      <update_rate>100.0</update_rate>
+      <xyz_offset>0 0 0</xyz_offset>
+      <rpy_offset>0 0 0</rpy_offset>
+      <gaussian_noise>0.0</gaussian_noise>
+    </plugin>
+  </gazebo>
+
+  <gazebo>
+    <plugin name="force" filename="libgazebo_ros_force.so">
+      <ros>
+        <namespace>/quadrotor</namespace>
+        <remapping>gazebo_ros_force:=wrench</remapping>
+      </ros>
+      <link_name>base_link</link_name>
+      <force_frame>link</force_frame>
+    </plugin>
+  </gazebo>
+</robot>

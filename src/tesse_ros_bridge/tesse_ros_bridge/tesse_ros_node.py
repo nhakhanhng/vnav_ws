@@ -223,7 +223,7 @@ class TesseROSWrapper:
             self.coll_pub = rospy.Publisher("collision", CollisionStats, queue_size=10)
 
         # Required states for finite difference calculations
-        self.prev_time      = 0.0
+        self.prev_time      = None
         self.prev_vel_brh   = [0.0, 0.0, 0.0]
         self.prev_enu_R_brh = np.identity(3)
 
@@ -461,7 +461,17 @@ class TesseROSWrapper:
 
         # Parse metadata and process for proper use.
         metadata = tesse_ros_bridge.utils.parse_metadata(data)
-        assert(self.prev_time < metadata['time'])
+        metadata_time = metadata['time']
+        if self.prev_time is None or metadata_time < self.prev_time:
+            # The first packet, or one after a Unity clock reset, has no
+            # previous sample from which to calculate acceleration and rates.
+            self.prev_time = metadata_time
+            self.prev_vel_brh = tesse_ros_bridge.utils.get_vel_brh_sim(metadata)
+            self.prev_enu_R_brh = tesse_ros_bridge.utils.get_rotation_mat(
+                tesse_ros_bridge.utils.get_enu_T_brh(metadata))
+            return
+        if metadata_time == self.prev_time:
+            return
 
         metadata_processed = tesse_ros_bridge.utils.process_metadata(metadata,
                 self.prev_time, self.prev_vel_brh, self.prev_enu_R_brh)
